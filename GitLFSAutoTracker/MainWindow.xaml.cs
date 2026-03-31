@@ -11,7 +11,7 @@ namespace GitLFSAutoTracker {
 
     public partial class MainWindow : Window {
 
-        public const float DECLARED_LFS_FILE_SIZE = 99f;
+        public float lfs_file_size = 25f;
 
         public event Action<int>? OnReceivedFilesCount = null;
         public event Action<string, long>? OnReadedFileSize = null;
@@ -25,17 +25,53 @@ namespace GitLFSAutoTracker {
 
         public MainWindow() {
             InitializeComponent();
+            ExecuteSearch();
+            InitMainEvents();
+            InitButtonEvents();
+        }
 
+        public void ExecuteSearch() {
+            bigFiles.Value.Clear();
             Button_CreateAttributes.Visibility = Visibility.Collapsed;
-
+            StackPanel_SizeButtons.Visibility = Visibility.Collapsed;
+            ListBox_Files.Items.Clear();
+            Label_FilesCounter.Content = $"Started search files with [{lfs_file_size} MB] size";
             Task.Run(SearchLocalFiles).ConfigureAwait(false);
+        }
+        public async Task SearchLocalFiles() {
 
-            Label_FilesCounter.Content = $"Started search files with [{DECLARED_LFS_FILE_SIZE} MB] size";
+            // search all files
+            string workingDirectory = Environment.CurrentDirectory;
+            ReadOnlyMemory<string> findedPaths = Directory.GetFiles(workingDirectory, "*", searchOption: SearchOption.AllDirectories).AsMemory();
 
+            // tracked all files Event
+            OnReceivedFilesCount?.Invoke(findedPaths.Length);
+
+            // detect big files Event
+            float sumSize = 0f;
+            for (int i = 0; i < findedPaths.Length; i++) {
+                FileInfo fileInfo = new FileInfo(findedPaths.Span[i]);
+                OnReadedFileSize?.Invoke(fileInfo.Name, fileInfo.Length);
+
+                string firstFolder = fileInfo.FullName.Replace(Environment.CurrentDirectory, "").Remove(0, 1).Split('\\')[0];
+                if (firstFolder == ".git") continue;
+
+                if (fileInfo.Length / 1024f / 1024f >= lfs_file_size) {
+                    sumSize += fileInfo.Length / 1024f / 1024f;
+                    bigFiles.Value.Push(fileInfo);
+                }
+            }
+
+            // on ended Event
+            OnTrackEnded?.Invoke(sumSize);
+
+            await Task.Yield();
+        }
+        public int InitMainEvents() {
             OnReadedFileSize += (name, size) => {
                 Dispatcher.Invoke(() => {
 
-                    if ((size / 1024f / 1024f) > DECLARED_LFS_FILE_SIZE) {
+                    if ((size / 1024f / 1024f) > lfs_file_size) {
                         ListBox_Files.Items.Insert(0, new Label() {
                             Content = $"[{(Math.Round(size / 1024f / 1024f, 5))} MB]: {name}",
                             Foreground = trackedColor,
@@ -56,9 +92,13 @@ namespace GitLFSAutoTracker {
                 Dispatcher.Invoke(() => {
                     Button_CreateAttributes.Visibility = Visibility.Visible;
                     Label_FilesCounter.Content = $"Finded [{bigFiles.Value.Count}]\nfiles [{fullSize} MB] at all";
+                    StackPanel_SizeButtons.Visibility = Visibility.Visible;
                 });
             };
 
+            return 0;
+        }
+        public int InitButtonEvents() {
             Button_CreateAttributes.Click += (sender, e) => {
                 StringBuilder sBuilder = new StringBuilder();
                 // filter=lfs diff=lfs merge=lfs -text
@@ -75,34 +115,12 @@ namespace GitLFSAutoTracker {
                 Thread.Sleep(1000);
                 Process.GetCurrentProcess().Kill();
             };
-        }
 
-        public async Task SearchLocalFiles() {
+            Button_Search25mb.Click += (sender, e) => { lfs_file_size = 25f; ExecuteSearch(); };
+            Button_Search49mb.Click += (sender, e) => { lfs_file_size = 49f; ExecuteSearch(); };
+            Button_Search99mb.Click += (sender, e) => { lfs_file_size = 99f; ExecuteSearch(); };
 
-            // search all files
-            string workingDirectory = Environment.CurrentDirectory;
-            ReadOnlyMemory<string> findedPaths = Directory.GetFiles(workingDirectory, "*", searchOption: SearchOption.AllDirectories).AsMemory();
-
-            // tracked all files Event
-            OnReceivedFilesCount?.Invoke(findedPaths.Length);
-
-            // detect big files Event
-            float sumSize = 0f;
-            for (int i = 0; i < findedPaths.Length; i++) {
-                FileInfo fileInfo = new FileInfo(findedPaths.Span[i]);
-                OnReadedFileSize?.Invoke(fileInfo.Name, fileInfo.Length);
-
-                string firstFolder = fileInfo.FullName.Replace(Environment.CurrentDirectory, "").Remove(0, 1).Split('\\')[0];
-                if (firstFolder == ".git") continue;
-
-                if (fileInfo.Length / 1024f / 1024f >= DECLARED_LFS_FILE_SIZE) {
-                    sumSize += fileInfo.Length / 1024f / 1024f;
-                    bigFiles.Value.Push(fileInfo);
-                }
-            }
-
-            // on ended Event
-            OnTrackEnded?.Invoke(sumSize);
+            return 0;
         }
     }
 }
