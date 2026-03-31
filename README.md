@@ -14,11 +14,11 @@
 
 ​	This widget searches for files larger than ```25/49/99 megabytes``` in the working directory and creates a ```.gitattributes``` file with a list of these files.
 
-<a>
+<p align="center">
 
-<img src="git_res/preview.png" align="center" height="512"/>
+<img src="git_res/preview.png"  height="512"/>
 
-</a> 
+</p> 
 
 
 
