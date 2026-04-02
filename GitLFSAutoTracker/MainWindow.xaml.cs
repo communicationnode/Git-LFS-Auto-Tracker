@@ -5,11 +5,13 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Wpf.Ui.Appearance;
+using Wpf.Ui.Controls;
 
 
 namespace GitLFSAutoTracker {
 
-    public partial class MainWindow : Window {
+    public partial class MainWindow : FluentWindow {
 
         public float lfs_file_size = 25f;
 
@@ -72,17 +74,21 @@ namespace GitLFSAutoTracker {
                 Dispatcher.Invoke(() => {
 
                     if ((size / 1024f / 1024f) > lfs_file_size) {
+                        // create tracked label in list
                         ListBox_Files.Items.Insert(0, new Label() {
                             Content = $"[{(Math.Round(size / 1024f / 1024f, 5))} MB]: {name}",
                             Foreground = trackedColor,
-                            FontWeight = FontWeights.Bold
+                            FontWeight = FontWeights.Bold,
+                            FontSize = 11
                         });
                     }
                     else {
+                        // create default label in list
                         ListBox_Files.Items.Add(new Label() {
                             Content = $"[{(Math.Round(size / 1024f / 1024f, 5))} MB]: {name}",
                             Foreground = defaultColor,
-                            FontWeight = FontWeights.Bold
+                            FontWeight = FontWeights.Bold,
+                            FontSize = 11
                         });
                     }
                 });
@@ -91,7 +97,7 @@ namespace GitLFSAutoTracker {
             OnTrackEnded += (fullSize) => {
                 Dispatcher.Invoke(() => {
                     Button_CreateAttributes.Visibility = Visibility.Visible;
-                    Label_FilesCounter.Content = $"Finded [{bigFiles.Value.Count}]\nfiles [{fullSize} MB] at all";
+                    Label_FilesCounter.Content = $"Finded [{bigFiles.Value.Count}]. Size [{fullSize} MB]";
                     StackPanel_SizeButtons.Visibility = Visibility.Visible;
                 });
             };
@@ -103,7 +109,7 @@ namespace GitLFSAutoTracker {
                 StringBuilder sBuilder = new StringBuilder();
                 // filter=lfs diff=lfs merge=lfs -text
                 while (bigFiles.Value.Count > 0) {
-                    sBuilder.AppendLine($"{bigFiles.Value.Pop().FullName.Replace(Environment.CurrentDirectory, "").Remove(0, 1).Replace('\\','/')} filter=lfs diff=lfs merge=lfs -text");
+                    sBuilder.AppendLine($"{bigFiles.Value.Pop().FullName.Replace(Environment.CurrentDirectory, "").Remove(0, 1).Replace('\\', '/')} filter=lfs diff=lfs merge=lfs -text");
                 }
 
                 File.WriteAllText(Path.Combine(Environment.CurrentDirectory, ".gitattributes"), sBuilder.ToString());
@@ -119,6 +125,10 @@ namespace GitLFSAutoTracker {
             Button_Search25mb.Click += (sender, e) => { lfs_file_size = 25f; ExecuteSearch(); };
             Button_Search49mb.Click += (sender, e) => { lfs_file_size = 49f; ExecuteSearch(); };
             Button_Search99mb.Click += (sender, e) => { lfs_file_size = 99f; ExecuteSearch(); };
+
+            MainWindowBorder.MouseDown += (sender, e) => { DragMove(); };
+            Button_Close.Click += (sender, e) => { Process.GetCurrentProcess().Kill(); };
+
 
             return 0;
         }

@@ -22,11 +22,22 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <None Remove="src\imgs\bg.png" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<Content Include="src\icon.ico" />
+		<Resource Include="src\imgs\bg.png">
+		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</Resource>
 	</ItemGroup>
 
 	<ItemGroup>
 	  <Folder Include="Properties\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="WPF-UI" Version="4.2.0" />
 	</ItemGroup>
 
 </Project>
