@@ -103,7 +103,7 @@ namespace GitLFSAutoTracker {
                 StringBuilder sBuilder = new StringBuilder();
                 // filter=lfs diff=lfs merge=lfs -text
                 while (bigFiles.Value.Count > 0) {
-                    sBuilder.AppendLine($"{bigFiles.Value.Pop().FullName.Replace(Environment.CurrentDirectory, "").Remove(0, 1)} filter=lfs diff=lfs merge=lfs -text");
+                    sBuilder.AppendLine($"{bigFiles.Value.Pop().FullName.Replace(Environment.CurrentDirectory, "").Remove(0, 1).Replace('\\','/')} filter=lfs diff=lfs merge=lfs -text");
                 }
 
                 File.WriteAllText(Path.Combine(Environment.CurrentDirectory, ".gitattributes"), sBuilder.ToString());
